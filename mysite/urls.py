@@ -16,7 +16,10 @@ Including another URLconf
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
+from django.http import HttpResponseRedirect
+
 urlpatterns = [
+    url(r'^$', lambda r: HttpResponseRedirect('voteapp/')),
     url(r'^voteapp/', include('voteapp.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^login/$', auth_views.login, name='login'),
