@@ -13,36 +13,25 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from voteapp.forms import MultiVoteForm, WriteInForm
-
-
 from django.shortcuts import redirect
 import datetime
 
 
-@login_required(login_url='/login/')
-class DetailView(generic.DetailView):
-    model = Election
-    template_name = 'voteapp/election_detail.html'
-
-    def get_queryset(self):
-            return Election.objects.all()
-
-
-
-class ResultsView(generic.DetailView):
-    model = Election
-    template_name = 'voteapp/results.html'
-
 
 def is_eligible(request, election_id):
+    """ Checks that the current user is registered for election with id passed in.
+        If eligible returns true,  otherwise return 404 indicating, not registered
+    """
     if request.user.election_set.filter(id=election_id): #make sure user is elegible to vote
         return True
     else:
         raise Http404("You are not registered for this election.")
 
 
-@login_required(login_url='/voteapp/login/')
+@login_required(login_url='/voteapp/login/')# redirects to login page if not logged in
 def eligible_elections(request):
+    """Creates a list of the elections that the logged in user is registered for."""
+
     template_name = 'voteapp/index.html'
     context_object_name = 'election_list' #variable to accesse in template
     current_user = request.user
@@ -52,6 +41,14 @@ def eligible_elections(request):
 
 
 def get_ballot_options(request, ballot):
+    """ This function returns a dictionary used for creating dynamic forms, it contains:
+        {'type': 'ranked' or 'checkbox' or 'radio',
+        'allow_custom': True or False,
+        'max_choices': int,
+        'option_list':
+                [{'type':'normal' or 'write_in',
+                  'obj': option_obj or write_in_option_obj (from model)}, ...]
+    """
 
     dynamic_form = {'type': ballot.type, 'allow_custom':ballot.allow_custom, 'max_choices':ballot.max_num}
     dynamic_form['option_list'] = []
@@ -68,12 +65,18 @@ def get_ballot_options(request, ballot):
 
 
 
-
-
-
 @login_required(login_url='/voteapp/login/')
 def add_write_in(request, election_id, ballot_id, write_in):
+    """ add_write_in creates a write in option if it doesn't already exist and saves it to the db.
 
+    Inputs:
+        request:        object that contains the user needed to link to write in object
+        election_id:    id of applicable election object
+        ballot_id:      id of applicable ballot (item to vote on)
+        write_in:       text containing option written in
+
+    Output: Data stored in DB
+    """
     if is_eligible(request, election_id): #authenticate user or return error
 
         max_display_order = WriteInOption.objects.all().aggregate(Max('display_order'))['display_order__max']
@@ -86,8 +89,27 @@ def add_write_in(request, election_id, ballot_id, write_in):
             wio.save()
         wio.voters.add(request.user)
 
+
 @login_required(login_url='/voteapp/login/')
-def save_vote(request, election_id, ballot_id, clean_data):
+def save_vote(request, ballot_id, clean_data):
+    """ Deletes any previous votes on this ballot(voting item) and then addes vote to DB
+
+    Inputs:
+        request:    object that contains the user needed to link to vote
+        ballot_id:  if of  ballot object to be linked to vote
+        clean_data: dictionary of dynamic data based on type of form filled out:
+                    if ballot type is ranked:
+                        key: choice_normal-<id> or write_in-<id> ie: write_in-1
+                        value: Rank Chosen (int) 1 through number of options
+                    if ballot type is radio:
+                        key: 'choice'
+                        value: "normal-<id>" or "write_in-<id>" ie: normal-1
+                    if ballot type is checkbox:
+                        key: choice_normal-<id> or write_in-<id> ie: write_in-1
+                        value: True
+        The new vote object created will be added to the db, if it is a write in the option will be set to null,
+        if it is a normal option then the custom_option will be set to null
+    """
     #if voter has already voted update vote
 
     #remove any previous votes from this voter
@@ -121,7 +143,7 @@ def save_vote(request, election_id, ballot_id, clean_data):
                 vote = Votes()
                 vote.voter = request.user
                 vote.time_stamp = datetime.datetime.now()
-                vote.value = value
+                vote.value = None
                 vote.ballot = ballot
                 if opt_type == "normal":
                     vote.custom_option = None
@@ -152,6 +174,15 @@ def save_vote(request, election_id, ballot_id, clean_data):
                 vote.save()
 
 def get_next_ballot(election, ballot_id):
+    """ Determines what the next ballot for the current election is and returns it or None if this is the last one
+    Inputs:
+        election:   object containing model for current election
+        ballot_id:  int represending id of ballot object in model db
+
+    Output:
+        next_ballot: object containing next ballot to display or None
+    """
+
     ballots = election.ballot_set.all().order_by('display_order')
     get_next = False
     next_ballot = None
@@ -170,14 +201,32 @@ def get_next_ballot(election, ballot_id):
 
 @login_required(login_url='/voteapp/login/')
 def election_detail(request, election_id, ballot_id=None):
+    """
+    The main control of app is in this function. It gets the election and ballot objects from db based on the
+    url (election1/ballot3/) the number following it is the id param passed in (this is done in urls.py).  If ballot_id
+    is None it shows a list of the ballots in the election and a start button.
+
+    If a write in option was added it adds it to the database and then reloads this function to display with new option.
+
+    All the relevant normal options and write in options are retreived and then passed into the MultiVoteForm to create dynamic
+    forms based on the type of ballot it is.  When the form is submitted this same function is called and loaded with the
+    same form elements and the data from request.POST (the chosen values) and after being cleaned and validated are added
+    as a vote to the db.
+
+    If its a valid posting then the next ballot is retrieved and this form is called again with the new ballot ID.  If there
+    is not another ballot it is redirected to the election_summary page showing the results of the election.
+
+    :param request:         contains user information from django
+    :param election_id:     id of current election model in db
+    :param ballot_id:       id of current ballot model in db
+    :return:                HTTP object with dictionary and template files for displaying next object
+    """
     form = None
     cur_ballot = None
     next_ballot = None
     write_in_form = None
     added_option = False
 
-    #import pdb
-    #pdb.set_trace()
     if is_eligible(request, election_id): #authenticate user
         election = get_object_or_404(Election, pk=election_id)
 
@@ -199,7 +248,7 @@ def election_detail(request, election_id, ballot_id=None):
             ballot_options = get_ballot_options(request, cur_ballot)
             form = MultiVoteForm(request.POST or None, extra=ballot_options, label_suffix="")
             if not added_option and request.method == "POST" and form.is_valid():
-                save_vote(request, election_id, ballot_id, form.cleaned_data)
+                save_vote(request, ballot_id, form.cleaned_data)
                 next_ballot = get_next_ballot(election, ballot_id)
                 if next_ballot:
                     return HttpResponseRedirect(reverse('voteapp:election_detail_ballot', args=(election_id,str(next_ballot.id))))
@@ -214,6 +263,16 @@ def election_detail(request, election_id, ballot_id=None):
 
 
 def election_summary(request):
+    """
+    This function counts up all the votes and adds them to a dictionary to be passed into the html template to display
+    the results of all the elections.
+
+    If the ballot type is ranked it will be proccessed differently in order to determin based on Instant Runoff and sent in
+    a variable to the template to be displayed.
+
+    :param request: containse user information
+    :return: HTTP object with template file and data to populate it
+    """
     tally= {}
 
 
