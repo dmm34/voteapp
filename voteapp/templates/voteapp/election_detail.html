@@ -1,0 +1,127 @@
+{% extends 'voteapp/base.html' %}
+{% block content %}
+<div class="container">
+    <h1 class="well well-lg text-center">{{ election.name }}</h1>
+
+    {% if error_message %}<p><div class="alert alert-danger">{{ error_message }}</div></p>{% endif %}
+
+    {% if ballot %}
+        <form action="." method="post">
+        {% csrf_token %}
+        <h2>{{ballot.ballot_title}}</h2>
+        {% if ballot.how_to_vote %}<h3>{{ballot.how_to_vote | linebreaksbr}}</h3>{% endif %}
+        {% if ballot.ballot_question %}<h4><strong>{{ballot.ballot_question| linebreaksbr}}</strong></h4>{% endif %}
+        {% if ballot.ballot_details %}<p><em>{{ballot.ballot_details| linebreaksbr}}</em></p>{% endif %}
+
+        {% if ballot.get_options %}
+            {{ form.non_field_errors }}
+            {% if ballot.type == 'ranked' %}
+                <div class="row top-buffer  container">
+
+                    <div class="form-group ">
+
+
+
+                        {% for field in form %}
+                        <div class="row well well-sm">
+
+                            {{ field.errors }}
+
+                            <div class="col-sm-2 text-center">
+                            {{ field }}
+                            </div>
+                            <div class="col-sm-8">
+                                {{ field.label_tag |linebreaksbr }}
+                            </div>
+
+
+
+                        </div>
+
+                        {% endfor %}
+
+
+
+                    </div>
+                </div>
+
+            {% elif ballot.type == 'radio' %}
+
+
+                <div >
+                        {% for field in form %}
+                        <div class="row well well-sm">
+
+                            {{ field.errors }}
+
+                            <div class="radio">
+                            {{ field }}
+                            </div>
+
+                        </div>
+                        {% endfor %}
+                </div>
+            {% elif ballot.type == 'checkbox' %}
+
+
+                <div >
+                        {% for field in form %}
+                        <div class="row well well-sm">
+
+                            {{ field.errors }}
+
+                            <div class="checkbox">
+                            {{ field }}{{ field.label_tag |linebreaksbr }}
+                            </div>
+
+                        </div>
+                        {% endfor %}
+                </div>
+            {% endif %}
+
+
+        {% endif %}
+        {% if write_in_form %}
+            {{ write_in_form.non_field_errors }}
+
+            {% for field in write_in_form %}
+            <div class="row well well-sm">
+                <div class="col-sm-5">
+                    {{ field.label_tag |linebreaksbr }}
+                </div>
+                <div class="col-sm-5 text-center">
+                {{ field }}
+                </div>
+
+                <button name="Add" type="submit" value="Add"  class="col-sm-2 text-center">
+                ADD
+                </button>
+
+            </div>
+            {% endfor %}
+        {% endif %}
+            <div class="text-center top-buffer">
+                <a href="{% url 'voteapp:election_detail' election.id %}"><button name="Save" type="submit" value="Save" class="btn-lg">SAVE</button></a>
+
+            </div>
+
+        </form>
+
+    {% else %}
+        <p>There are {{ election.ballot_set.count }} items on this ballot, click start to begin or select an item below to go directly to that ballot item.</p>
+        <div class="text-center top-buffer">
+            <a href="{% url 'voteapp:election_detail_ballot' election.id election.get_ballots.first.id %}"><button class="btn-lg">START</button></a>
+        </div>
+    {% endif %}
+
+    <div class="footer well well-md">
+        <p>Jump to a specific ballot item:</p>
+        <ul class="nav nav-pills nav-stacked text-center">
+
+        {% for each_ballot in election.ballot_set.all %}
+            <li class="{% if each_ballot.id == ballot.id %}active{% endif %}"><a  href="{% url 'voteapp:election_detail_ballot' election.id each_ballot.id %}">{{ each_ballot.ballot_title }}</a></li>
+        {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

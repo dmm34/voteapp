@@ -1,0 +1,23 @@
+{% extends 'voteapp/base.html' %}
+
+{% block content %}
+<div class="container">
+    {% for election_id, e_data in tally.items %}
+    <h1 class="well well-lg text-center ">{{ e_data.election.name }}</h1>
+        {% for ballot_id, ballot_dict in e_data.ballots.items %}
+        <h3 class=" ">{{ ballot_dict.ballot.ballot_title }}</h3>
+            <table  class="table table-bordered">
+                <tr>
+                    <th class="">Count</th><th>Option</th>
+                </tr>
+                {% for option_id, option_data in ballot_dict.ballot_tally.items %}
+                <tr class=" ">
+                    <td class="tally_count">{{ option_data.count}}</td>
+                    <td>{{option_data.name | linebreaksbr}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% endfor %}
+    {% endfor %}
+</div>
+{% endblock %}

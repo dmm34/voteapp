@@ -1,0 +1,36 @@
+
+body {
+    background: white ;
+}
+.container {
+    max-width: 54rem;
+}
+.footer {
+    margin-top: 4rem;
+}
+.top-buffer {
+    margin-top: 2rem;
+}
+.errorlist {
+    list-style: none;
+    color: red;
+}
+div.radio > ul >li{
+    list-style: none;
+    margin-top: 1rem;
+    line-height: 25px;
+}
+div.radio > ul >li>label>input{
+    padding-right: 20px;
+}
+div.checkbox > input {
+    margin-left: 10px !important;
+}
+div.checkbox > label {
+    margin-left: 20px;
+    line-height: 26px;
+}
+.tally_count{
+    font-size: 24px;
+    width: 10%;
+}

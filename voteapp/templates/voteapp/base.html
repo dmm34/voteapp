@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VoteApp</title>
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'voteapp/bootstrap/css/bootstrap.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'voteapp/style.css' %}" />
+</head>
+<body>
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <ul class="navbar-static-top navbar-nav nav">
+            <li><a href="/voteapp/">Home</a></li>
+
+            <li><a href="/voteapp/results">Results</a></li>
+
+            {% if user.is_authenticated %}
+                <li><a href="/voteapp/logout">Logout {{ user.first_name }}</a></li>
+            {% else %}
+                <li><a href="/voteapp/login">Login</a></li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+{% block content %}
+{% endblock %}
+</body>
+</html>

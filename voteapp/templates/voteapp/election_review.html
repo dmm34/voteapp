@@ -1,0 +1,14 @@
+{% extends 'voteapp/base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="well well-lg text-center ">{{ election.name }}</h1>
+    <h2>Review:</h2>
+    <p>Check your candidates/choices and if they are correct press submit below.  Otherwise, return and correct any of your choices.</p>
+    <div class="text-center">
+    <button class="btn-lg">SUBMIT VOTE</button>
+    </div>
+</div>
+{% endblock %}
