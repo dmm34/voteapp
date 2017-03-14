@@ -1,0 +1,19 @@
+{% extends 'voteapp/base.html' %}
+{% block content %}
+    <h1>Logs</h1>
+    <div class="container-fluid log_table">
+        <div class="row">
+            <div class="h4 col-sm-3"><u>Time</u></div>
+            <div class="h4 col-sm-2"><u>Username</u></div>
+            <div class="h4 col-sm-7"><u>Action</u></div>
+        </div>
+        {% for log in logs %}
+        <div class="row">
+            <div class="col-sm-3">{{ log.time_stamp }}</div>
+            <div class="col-sm-2">{{ log.voter }}</div>
+            <div class="col-sm-7">{{ log.action }}</div>
+        </div>
+
+        {% endfor %}
+    </div>
+{% endblock %}

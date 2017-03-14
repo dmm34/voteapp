@@ -4,12 +4,12 @@
 
 {% block content %}
     <div class="container">
-        <h1 class="well well-lg text-center">Login</h1>
+        <h1 class="well well-lg text-center">Register</h1>
 
         <form method="post">
             {% csrf_token %}
             {{form.as_p}}
-            <button class="btn-lg text-center center_btn" type="submit" >Log in</button>
+            <button class="btn-lg text-center center_btn" type="submit" >Submit</button>
         </form>
     </div>
 {% endblock %}

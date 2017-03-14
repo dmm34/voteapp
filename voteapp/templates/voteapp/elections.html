@@ -1,0 +1,25 @@
+{% extends 'voteapp/base.html' %}
+{% block content %}
+
+    <div class="text-center">
+        <h1>Online Voting App</h1>
+    </div>
+    <div>
+    {% if user.is_authenticated %}
+
+
+        {% if election_list %}
+            <h3>Choose an election:</h3>
+            <div class="list-group">
+            {% for election in election_list %}
+                <a class="list-group-item" href="{% url 'voteapp:election_detail' election.id %}">{{ election.name }}</a>
+            {% endfor %}
+            </div>
+        {% else %}
+            <p>There are no elections currently available.</p>
+        {% endif %}
+
+
+    {% endif %}
+    </div>
+{% endblock %}

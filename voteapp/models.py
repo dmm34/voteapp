@@ -1,5 +1,5 @@
 from django.db import models
-import datetime
+
 from django.utils import timezone
 from django.contrib.auth.models import User
 
@@ -72,12 +72,19 @@ class Votes(models.Model):
     value = models.CharField(max_length=20, default=None,  null=True, blank=True)
 
 
+    def __str__(self):
+        output = "Voter: {}, Ballot ID: {}, Option ID: {}, Custom Option ID: {}, Time: {}, Value: {}".format(self.voter, self.ballot, self.option, self.custom_option, self.time_stamp, self.value)
+        return output
 
 
 class LogHistory(models.Model):
     time_stamp = models.DateTimeField()
     voter=models.ForeignKey(User, on_delete=models.CASCADE)
-    election = models.ForeignKey(Option, on_delete=models.CASCADE)
+    action = models.CharField(max_length=200)
 
     def __str__(self):
-            return self.first_name + " " + self.last_name
+        ouput = "{}: User {}, {}".format(self.time_stamp, self.voter.username, self.action)
+        return ouput
+
+
+

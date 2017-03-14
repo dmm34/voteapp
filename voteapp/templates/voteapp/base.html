@@ -14,7 +14,9 @@
             <li><a href="/voteapp/">Home</a></li>
 
             <li><a href="/voteapp/results">Results</a></li>
-
+            {% if user.is_staff %}
+                <li><a href="/voteapp/view_logs">View Logs</a></li>
+            {% endif %}
             {% if user.is_authenticated %}
                 <li><a href="/voteapp/logout">Logout {{ user.first_name }}</a></li>
             {% else %}

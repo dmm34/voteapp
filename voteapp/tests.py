@@ -1,121 +1,148 @@
-
-import datetime
+from django.utils import timezone
 
 from django.utils import timezone
-from django.test import TestCase
+from django.test import TestCase, RequestFactory
 
-from .models import Question
+from .views import *
+from .models import *
 
 from django.urls import reverse
+import random
 
 
-
-def create_question(question_text, days):
+def create_voter(name, email, password):
     """
-    Creates a question with the given `question_text` and published the
-    given number of `days` offset to now (negative for questions published
-    in the past, positive for questions that have yet to be published).
+    Creates a voter
     """
-    time = timezone.now() + datetime.timedelta(days=days)
-    return Question.objects.create(question_text=question_text, pub_date=time, type="multiple_choice")
+    user = User.objects.create_user(
+            username='jacob', email='jacob@…', password='top_secret')
+
+    return User
 
 
+class GetTallyOptionsTest(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.election = Election.objects.create(name="Coolest", vote_deadline=(timezone.now() + timezone.timedelta(days=10)) )
+        self.election.save()
+        self.ballot = Ballot.objects.create(
+            ballot_title = "Which is the coolest?",
+            how_to_vote = "RANKED CHOICE (INSTANT RUNNOFF)",
+            ballot_question = "",
+            ballot_details= "Rank in order of choice",
+            election = self.election,
+            type = "ranked",
+            required_num = 0,
+            max_num = 9999,
+            allow_custom = True,
+            display_order = 10)
+        self.ballot.save()
 
-class QuestionMethodTests(TestCase):
+        disp_order = 10
+        self.options = ["LL Cool J", "Neptune", "Ice", "Snow", "Justin Timberlake"]
+        for opt_text in self.options:
+            option = Option.objects.create(
+                ballot_item = self.ballot,
+                option_text = opt_text,
+                display_order = disp_order,
+            )
+            disp_order += 10
+            option.save()
 
-    def test_was_published_recently_with_future_question(self):
-        """
-        was_published_recently() should return False for questions whose
-        pub_date is in the future.
-        """
-        time = timezone.now() + datetime.timedelta(days=30)
-        future_question = Question(pub_date=time)
-        self.assertIs(future_question.was_published_recently(), False)
+        self.user_list = []
+        num_users = 100
+        for i in range(num_users):
 
-    def test_was_published_recently_with_old_question(self):
-        """
-        was_published_recently() should return False for questions whose
-        pub_date is older than 1 day.
-        """
-        time = timezone.now() - datetime.timedelta(days=30)
-        old_question = Question(pub_date=time)
-        self.assertIs(old_question.was_published_recently(), False)
+            name = 'test_user_'+str(i)
+            user = User.objects.create_user(username=name, first_name=name, password='secret')
+            self.user_list.append(user)
+            self.election.voters.add(user) #add all users to election
+
+    def create_votes(self, method):
+
+        #form data is dif based on type of ballot:
+        #if ballot type is ranked:
+        #   key: choice_normal-<id> or write_in-<id> ie: write_in-1
+        #   value: Rank Chosen (int) 1 through number of options
+
+        if method == 'same':
+            #all the same vote
+            options = Option.objects.all()
+            form_data = {}
+            count = 1
+            for option in options:
+                form_data['choice_normal-{}'.format(option.id)] = count
+                count +=1
+
+            for user in self.user_list: #everyone has the same vote rank
+                save_vote(user, self.ballot.id, form_data)
+                #votes = Votes.objects.all()
+                #for vote in votes:
+                #    print(vote)
+                #print("***************************")
+
+        if method == 'random':
+            #all random votes
+
+            options = Option.objects.all()
+
+            opt_vals = list(range(1,len(options)+1))
+
+            for user in self.user_list: #everyone has the same vote rank
+                form_data = {}
+                i=0
+                random.shuffle(opt_vals)
+                for option in options:
+                    form_data['choice_normal-{}'.format(option.id)] = opt_vals[i]
+                    i+=1
+                save_vote(user, self.ballot.id, form_data)
+
+        if method == 'tie':
+            #all random votes
+
+            options = Option.objects.all()
+
+            opt_vals = list(range(1,len(options)+1))
+
+            for user in self.user_list: #everyone has the same vote rank
+                if user.id < 5:
+                    #first 4 vote for 3 with backup up of 1
+                    form_data = {}
+                    form_data['choice_normal-3'] = 1
+                    form_data['choice_normal-1'] = 2
+                elif user.id % 2 == 0:
+                    #half of remaining vote for 1 and then 3
+                    form_data = {}
+                    form_data['choice_normal-1'] = 1
+                    form_data['choice_normal-2'] = 2
+                else:
+                    #half of remaining vote for 2 and then 3
+                    form_data = {}
+                    form_data['choice_normal-1'] = 1
+                    form_data['choice_normal-2'] = 2
+                save_vote(user, self.ballot.id, form_data)
 
 
-class QuestionViewTests(TestCase):
-    def test_index_view_with_no_questions(self):
+    def test_tally_ranked_with_tied_low_rank(self):
         """
-        If no questions exist, an appropriate message should be displayed.
+        Should return a tally object with
         """
-        response = self.client.get(reverse('voteapp:index'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No polls are available.")
-        self.assertQuerysetEqual(response.context['latest_question_list'], [])
 
-    def test_index_view_with_a_past_question(self):
-        """
-        Questions with a pub_date in the past should be displayed on the
-        index page.
-        """
-        create_question(question_text="Past question.", days=-30)
-        response = self.client.get(reverse('voteapp:index'))
-        self.assertQuerysetEqual(
-            response.context['latest_question_list'],
-            ['<Question: Past question.>']
-        )
+        self.create_votes('same')
+        votes = Votes.objects.all()
 
-    def test_index_view_with_a_future_question(self):
-        """
-        Questions with a pub_date in the future should not be displayed on
-        the index page.
-        """
-        create_question(question_text="Future question.", days=30)
-        response = self.client.get(reverse('voteapp:index'))
-        self.assertContains(response, "No polls are available.")
-        self.assertQuerysetEqual(response.context['latest_question_list'], [])
+        tally = get_tally_object()
 
-    def test_index_view_with_future_question_and_past_question(self):
-        """
-        Even if both past and future questions exist, only past questions
-        should be displayed.
-        """
-        create_question(question_text="Past question.", days=-30)
-        create_question(question_text="Future question.", days=30)
-        response = self.client.get(reverse('voteapp:index'))
-        self.assertQuerysetEqual(
-            response.context['latest_question_list'],
-            ['<Question: Past question.>']
-        )
+        self.assertIs(tally[1]['ballots'][1]['ballot_tally'], len(self.user_list))
 
-    def test_index_view_with_two_past_questions(self):
-        """
-        The questions index page may display multiple questions.
-        """
-        create_question(question_text="Past question 1.", days=-30)
-        create_question(question_text="Past question 2.", days=-5)
-        response = self.client.get(reverse('voteapp:index'))
-        self.assertQuerysetEqual(
-            response.context['latest_question_list'],
-            ['<Question: Past question 2.>', '<Question: Past question 1.>']
-        )
 
-class QuestionIndexDetailTests(TestCase):
-    def test_detail_view_with_a_future_question(self):
-        """
-        The detail view of a question with a pub_date in the future should
-        return a 404 not found.
-        """
-        future_question = create_question(question_text='Future question.', days=5)
-        url = reverse('voteapp:detail', args=(future_question.id,))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+    def test_tally_ranked_with_tie(self):
+        # run a test with half option1 and half option2 and 1 other with option
 
-    def test_detail_view_with_a_past_question(self):
-        """
-        The detail view of a question with a pub_date in the past should
-        display the question's text.
-        """
-        past_question = create_question(question_text='Past Question.', days=-5)
-        url = reverse('voteapp:detail', args=(past_question.id,))
-        response = self.client.get(url)
-        self.assertContains(response, past_question.question_text)
+        self.create_votes('tie')
+        #pdb.set_trace()
+
+        tally = get_tally_object()
+
+        print(tally)
+        self.assertIs()

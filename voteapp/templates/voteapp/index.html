@@ -2,24 +2,39 @@
 {% block content %}
 
     <div class="text-center">
-        <h1>Online Voting App</h1>
+        <h1>Welcome to VoteApp!</h1>
     </div>
     <div>
-    {% if user.is_authenticated %}
+    {% if not user.is_authenticated %}
 
+        <div class="container ">
 
-        {% if election_list %}
-            <h3>Choose an election:</h3>
-            <div class="list-group">
-            {% for election in election_list %}
-                <a class="list-group-item" href="{% url 'voteapp:election_detail' election.id %}">{{ election.name }}</a>
-            {% endfor %}
+                <p class="text-center">Please Register or Log In</p>
+            <div class="well well-sm ">
+                <a class="" href="{% url 'voteapp:register' %}"><button class="btn-lg text-center center_btn">Register</button></a>
             </div>
-        {% else %}
-            <p>There are no elections currently available.</p>
-        {% endif %}
+            <div class=" well well-sm">
+                <div>
+                    <a class="" href="{% url 'voteapp:login' %}"><button class="btn-lg text-center center_btn" type="submit" >Log in</button></a>
+                </div>
 
+            </div>
+        </div>
+    {% else %}
 
+        <div class="container ">
+
+                <p class="text-center">Where would you like to go?</p>
+            <div class="well well-sm ">
+                <a class="" href="{% url 'voteapp:elections' %}"><button class="btn-lg text-center center_btn">Elections</button></a>
+            </div>
+            <div class=" well well-sm">
+                <div>
+                    <a class="" href="{% url 'voteapp:election_summary' %}"><button class="btn-lg text-center center_btn" type="submit" >Results</button></a>
+                </div>
+
+            </div>
+        </div>
     {% endif %}
     </div>
 {% endblock %}

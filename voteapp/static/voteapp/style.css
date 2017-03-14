@@ -1,4 +1,17 @@
+a {
+    text-decoration: none;
+}
+a :hover{
 
+    text-decoration: none;
+}
+button{
+    color:#000;
+}
+button:hover{
+    text-decoration: none;
+    color: #337ab7;
+}
 body {
     background: white ;
 }
@@ -33,4 +46,19 @@ div.checkbox > label {
 .tally_count{
     font-size: 24px;
     width: 10%;
+}
+.center_btn{
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+div.container-fluid.log_table > div >div{
+    margin-top:5px;
+    margin-bottom:5px;
+}
+div.container-fluid.log_table > div:nth-of-type(odd) {
+    background-color: #f8f8f8;
+    border-color: #e7e7e7;
+
+
 }
