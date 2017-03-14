@@ -1,5 +1,5 @@
 # VoteApp
-VoteApp is a simple voting application that allows users to vote online. It is built on django which contains a great back end for creating elections, ballots, and choices.
+VoteApp is a simple voting application that allows users to vote online. It is built on Django which contains a great back end for creating elections, ballots, and choices.
 
 ###Getting Started
 Your election details can be entered and configured by going to the folder /admin/ and logging in to djangos back end.
