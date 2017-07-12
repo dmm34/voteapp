@@ -32,4 +32,4 @@ After logging in you will be able to see the Elections you are eligible for and 
 If your user account has staff privileges you will be able to see the View Logs menu item that shows all the history for each user.
 
 I hope you enjoy the program!
-
+.
